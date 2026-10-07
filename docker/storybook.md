@@ -19,8 +19,8 @@ Three recurring markers:
   The answer is in the talking points, not in the block.
 - **Your turn:** a minute or two for the participants who build along.
 - **Agent trap:** a mistake coding agents (and tutorials) make often. They are collected in
-  [step 17](#step-17-wrap-up-from-docker-to-k3s); that list is what the morning should leave
-  behind.
+  [step 17](#step-17-wrap-up-from-docker-to-k3s); that list is what this half day should
+  leave behind.
 
 **Setup:** Docker Desktop on Windows, and every command runs in **bash inside WSL (Ubuntu)**,
 with this repository cloned to `~/docker-k3s`. Linux containers, .NET 10. Everything the
@@ -29,37 +29,9 @@ removed by that name; nothing in here prunes.
 
 The demos were rehearsed on 6 October 2026 with Docker Engine 29.7.1, Compose 5.5.1, and the
 .NET 10.0.12 images on Linux (x86-64). The rehearsal script ([`rehearsal/run-blocks.py`](../rehearsal/run-blocks.py))
-runs every block marked `<!-- run -->` in order and times it. A second, independent
+runs every block marked `<!-- run -->` in order and logs its output. A second, independent
 walkthrough by a fresh agent ran every block, including the unmarked ones. Where Docker
 Desktop behaves differently from a native Linux engine, the step says so.
-
-## Timing
-
-Machine time per step in the rehearsal: commands only, measured by `run-blocks.py`, with the
-images pre-pulled and the NuGet and build caches from earlier runs. The first build of the
-day adds a few seconds per Dockerfile (the naive build took 6 s cold). Everything else in a
-step is talking, which is the point. A natural break: after step 7, the end of Part 1.
-
-| Step | Topic | Machine time |
-| --- | --- | ---: |
-| 1 | setup check | < 1 s |
-| 2 | a container is a process | 2 s |
-| 3 | images and containers | 1 s |
-| 4 | the first Dockerfile | 4 s (9 s when the build isn't cached) |
-| 5 | layer cache and `.dockerignore` | 17 s |
-| 6 | multi-stage and chiseled | 4 s |
-| 7 | images without a Dockerfile (optional) | 9 s |
-| 8 | run and watch | 6 s |
-| 9 | how a container ends | 22 s (10 s of it is the shell-form `docker stop`) |
-| 10 | configuration with environment variables | 9 s |
-| 11 | volumes | 10 s |
-| 12 | registries | 7 s |
-| 13 | networks | 9 s |
-| 14 | Docker Compose | 11 s |
-| 15 | a reverse proxy: Traefik | 16 s |
-| 16 | slim and secure images | 30 s (the first Trivy run downloads its database) |
-| 17 | wrap-up: from Docker to k3s | < 1 s |
-| | **total** | **about 2.5 minutes** |
 
 ## Before the workshop
 
@@ -657,7 +629,7 @@ docker image rm leaky
 - **Environment variables are not secret.** `docker inspect` shows them. **Agent trap:**
   secrets in `ENV` or `ARG` in a Dockerfile: they're in the image for good, for everyone
   who can pull it. Real secrets come from files mounted at runtime or a secret store
-  (Kubernetes Secrets in the afternoon).
+  (Kubernetes Secrets in the k3s half day).
 
 If it breaks: a value isn't picked up → check the spelling with `docker inspect`; in bash,
 a variable name can't contain `:`, which is exactly why `__` exists.
@@ -802,7 +774,7 @@ jq '{credsStore, registries: (.auths | keys)}' ~/.docker/config.json
 ```
 
 **Leave the registry running.** The k3s half day pulls from it; configuring k3s to trust
-this plain-HTTP registry is part of the afternoon.
+this plain-HTTP registry is part of it.
 
 - **The answer:** "push access denied": the registry wants a login (the first `curl`
   already said 401). The error comes after some progress lines, so read to the end.
@@ -982,7 +954,7 @@ Live (not rehearsed): `docker compose up` without `-d` shows all logs in one str
 
 - **Declarative:** the file says what should exist; `up` makes it so and leaves alone what
   already matches (the second `up` changed nothing). That's the mental model for Kubernetes
-  manifests in the afternoon.
+  manifests in the k3s half day.
 - **The answer:** no, the count goes on. `down` removes containers and the network but keeps
   volumes; `down -v` deletes them, too. **Agent trap:** `down -v` in a cleanup script: data
   loss is one flag away.
@@ -996,7 +968,7 @@ Live (not rehearsed): `docker compose up` without `-d` shows all logs in one str
   `pg_isready`. Our chiseled app has `/healthz` but no shell and no curl to call it from
   inside, so it has no Docker health check. Kubernetes probes come from outside the
   container, so there `/healthz` just works: the readiness and liveness probes of the
-  afternoon.
+  k3s half day.
 - **Two kinds of variables:** `.env` next to `compose.yaml` fills `${...}` in the file;
   `environment:` sets variables in the container. `.env` keeps passwords out of the YAML,
   but not out of `docker inspect`.
@@ -1008,7 +980,7 @@ If it breaks: `dependency failed to start: container workshop-compose-db-1 is un
 ## Step 15: a reverse proxy: Traefik
 
 **Goal:** one entry point that routes by host name and balances across replicas. k3s ships
-Traefik as its default ingress controller, so this is the afternoon's mental model.
+Traefik as its default ingress controller, so this is the mental model for the k3s half day.
 
 [`compose-traefik/compose.yaml`](compose-traefik/compose.yaml) (the database is as in step
 14):
@@ -1186,19 +1158,19 @@ The checklist:
   all three.
 - **A pinned image doesn't patch itself.** Rebuild on base image updates, not only on code
   changes.
-- These flags show up again in the afternoon as a Kubernetes `securityContext`.
+- These flags show up again in the k3s half day as a Kubernetes `securityContext`.
 
 If it breaks: Trivy is slow the first time → it downloads its vulnerability database into
 the `workshop-trivy-cache` volume; the second run takes seconds.
 
 ## Step 17: wrap-up: from Docker to k3s
 
-**Goal:** what carries over to the afternoon, and the list of traps to look for in any
+**Goal:** what carries over to the k3s half day, and the list of traps to look for in any
 Dockerfile or Compose file, whoever wrote it.
 
 **Your turn:** before showing the table, ask the room to guess the right-hand column.
 
-| Docker (this morning) | k3s (this afternoon) |
+| Docker | k3s |
 | --- | --- |
 | image, registry (step 12: `localhost:5000`) | the same images, pulled by the cluster |
 | `docker run` | Pod, managed by a Deployment |
@@ -1213,7 +1185,7 @@ Dockerfile or Compose file, whoever wrote it.
 | `--read-only`, `--cap-drop` | `securityContext` |
 | `docker logs`, `inspect`, `ps` | `kubectl logs`, `describe`, `get` |
 
-The agent traps of the morning: read every generated Dockerfile and Compose file with this
+The agent traps of the Docker half day: read every generated Dockerfile and Compose file with this
 list in mind.
 
 | Trap | Step |
@@ -1234,13 +1206,13 @@ list in mind.
 - Compose runs containers on one machine. Kubernetes runs them on many, and keeps them
   running when one of those machines dies. The vocabulary changes; the container doesn't.
 
-Clean up the morning, but keep the registry and its image:
+Clean up the Docker half day, but keep the registry and its image:
 
 <!-- run -->
 ```bash
 docker image rm hello-web:1-naive hello-web:2-layers hello-web:3-multistage hello-web:4-chiseled hello-web:shell-form 2>/dev/null
 docker image rm visit-counter:1 visit-counter:compose localhost:5000/hello-web:1.0 hello-web:sdk 2>/dev/null
-docker ps --filter name=registry --format '{{.Names}}: {{.Status}}'      # still running for the afternoon
+docker ps --filter name=registry --format '{{.Names}}: {{.Status}}'      # still running for the k3s half day
 ```
 
 ---

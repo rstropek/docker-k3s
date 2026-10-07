@@ -1,10 +1,10 @@
 # Docker and k3s for .NET developers
 
-A hands-on workshop in two half days for C# developers who work on Windows:
+A hands-on workshop in two separate half days for C# developers who work on Windows:
 
-- **Morning: Docker.** What an image, a container, a volume, and a network really are, built
+- **Docker.** What an image, a container, a volume, and a network really are, built
   up from a small ASP.NET Core app to a multi-container setup with Compose and Traefik.
-- **Afternoon: k3s.** The same app on a lightweight Kubernetes cluster: Pods, Deployments,
+- **k3s.** The same app on a lightweight Kubernetes cluster: Pods, Deployments,
   Services, Ingress, configuration, persistent storage, and troubleshooting.
 
 The goal is not to make everyone a platform engineer. The goal is fundamentals solid enough
@@ -106,8 +106,8 @@ repository root:
 ```bash
 rehearsal/run-blocks.py --list                          # steps and their runnable blocks
 rehearsal/run-blocks.py --step 6 9                      # some steps of the Docker half day
-rehearsal/run-blocks.py                                 # the whole Docker half day, about 2.5 minutes
-rehearsal/run-blocks.py --storybook k3s/storybook.md    # the whole k3s half day, about 5 minutes
+rehearsal/run-blocks.py                                 # the whole Docker half day
+rehearsal/run-blocks.py --storybook k3s/storybook.md    # the whole k3s half day
 ```
 
 The output of each step goes to `rehearsal/logs/`.

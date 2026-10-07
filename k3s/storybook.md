@@ -3,8 +3,8 @@
 **Half day 2 of the Docker and k3s workshop for the MI-SA development team**
 
 This is the presenter's guide, not a book to follow alone. Improvisation is part of the plan. The
-audience is experienced C# developers who live on Windows, know a little Linux, and spent
-the morning with Docker ([`docker/storybook.md`](../docker/storybook.md)). The goal is the
+audience is experienced C# developers who live on Windows, know a little Linux, and did
+the Docker half day ([`docker/storybook.md`](../docker/storybook.md)). The goal is the
 fundamentals of Kubernetes, shown with k3s: what a Pod, a Deployment, a Service, and a
 PersistentVolumeClaim really are, so that later, when a coding agent writes manifests, they
 can read and judge them. Details that an agent gets right anyway stay out.
@@ -16,66 +16,41 @@ from earlier steps (`kubectl apply` changes nothing that is already in place). T
 app lives from step 5 to step 10 and is removed there; the visit counter (steps 11 and 12)
 and the broken apps (step 13) are removed at the end of their steps.
 
-Three recurring markers, as in the morning:
+Three recurring markers, as in the Docker half day:
 
 - **Ask first:** a prediction question before a block. Let the room answer, then run it.
   The answer is in the talking points, not in the block.
 - **Your turn:** a minute or two for the participants who build along.
 - **Agent trap:** a mistake coding agents (and tutorials) make often. They are collected in
-  [step 14](#step-14-wrap-up); that list is what the afternoon should leave behind.
+  [step 14](#step-14-wrap-up); that list is what this half day should leave behind.
 
 **Setup:** Docker Desktop on Windows, every command in **bash inside WSL (Ubuntu)**, the
-repository cloned to `~/docker-k3s`, as in the morning. The cluster is **k3s, run by k3d**:
+repository cloned to `~/docker-k3s`, as in the Docker half day. The cluster is **k3s, run by k3d**:
 each Kubernetes node is a Docker container, so the cluster needs nothing but Docker, is
 created in about 20 seconds, and is gone with one command. It is the same k3s you'd install
 on a server; [step 2](#step-2-a-cluster-made-of-containers) says what differs. The cluster
-pulls images from the morning's registry at `localhost:5000`.
+pulls images from the Docker half day's registry at `localhost:5000`.
 
 The demos were rehearsed on 6 October 2026 with k3d 5.9.0, k3s v1.36.5+k3s1, kubectl 1.36,
 and Docker Engine 29.7.1 on Linux (x86-64). The rehearsal script
 ([`rehearsal/run-blocks.py`](../rehearsal/run-blocks.py)) runs every block marked
-`<!-- run -->` in order and times it:
+`<!-- run -->` in order and logs its output:
 
 ```bash
 ~/docker-k3s/rehearsal/run-blocks.py --storybook k3s/storybook.md
 ```
 
-## Timing
-
-Machine time per step in the rehearsal: commands only, measured by `run-blocks.py`, with
-the images pre-pulled; the cluster's nodes pulled their own images over a fast line.
-Everything else in a step is talking, which is the point. A natural break: after step 7,
-the end of Part 2.
-
-| Step | Topic | Machine time |
-| --- | --- | ---: |
-| 1 | setup check | < 1 s (3 s when it recreates the registry) |
-| 2 | a cluster made of containers | 18 s |
-| 3 | inside the cluster | 44 s (most of it waiting for Traefik: the cluster's first minute) |
-| 4 | the first Pod | 5 s |
-| 5 | manifests and Deployments | 4 s |
-| 6 | scaling and self-healing | 14 s |
-| 7 | rolling updates | 29 s (20 s of it is the broken release timing out) |
-| 8 | Services | 5 s |
-| 9 | Ingress: Traefik again | 7 s |
-| 10 | ConfigMaps and Secrets | 22 s |
-| 11 | volumes and PersistentVolumeClaims | 28 s |
-| 12 | a real deployment: the visit counter | 80 s (20 s of crashing on purpose, the wait for the app's next restart, and deleting the namespace) |
-| 13 | troubleshooting | 45 s (30 s of it is waiting for the apps to fail) |
-| 14 | wrap-up | 3 s |
-| | **total** | **about 5 minutes** |
-
 ## Before the workshop
 
-**Participants** (send this a week ahead, together with the morning's list):
+**Participants** (send this a week ahead, together with the Docker half day's list):
 
-- Everything from the morning's "Before the workshop": WSL with Ubuntu, Docker Desktop with
+- Everything from the Docker half day's "Before the workshop": WSL with Ubuntu, Docker Desktop with
   WSL integration, the repository in `~/docker-k3s`.
-- The two tools of the afternoon, into `~/.local/bin` (no sudo), and the images:
+- The two tools of this half day, into `~/.local/bin` (no sudo), and the images:
   ```bash
   cd ~/docker-k3s/k3s
   ./install-tools.sh    # k3d, and kubectl unless a recent one is installed already
-  ./prepull.sh          # k3s and k3d: about 500 MB on disk, on top of the morning's images
+  ./prepull.sh          # k3s and k3d: about 500 MB on disk, on top of the Docker half day's images
   ```
 - An editor for YAML in WSL: VS Code with the WSL extension (`code ~/docker-k3s` in the
   Ubuntu shell) and Red Hat's YAML extension, which knows the Kubernetes schema; or `nano`.
@@ -84,8 +59,8 @@ the end of Part 2.
   Desktop gets half of the laptop's memory by default; on an 8 GB laptop, close the browser
   tabs you don't need.
 
-The morning's registry must be running with `hello-web:1.0` in it. Anyone who skipped the
-morning, or cleaned it up, gets it back with `./registry.sh`; step 1 runs it anyway.
+The registry from the Docker half day must be running with `hello-web:1.0` in it. Anyone
+who skipped that half day, or cleaned it up, gets it back with `./registry.sh`; step 1 runs it anyway.
 
 **Presenter:**
 
@@ -93,11 +68,11 @@ morning, or cleaned it up, gets it back with `./registry.sh`; step 1 runs it any
   and the rehearsal script agree, then a full rehearsal.
 - When the cluster is created, its nodes pull the k3s system images (Traefik, CoreDNS, ...)
   and later Postgres from the internet themselves; `prepull.sh` can't help there, because
-  every new cluster starts with empty nodes. On weak wifi, create the cluster before the
-  break and keep it; or tether.
+  every new cluster starts with empty nodes. On weak wifi, create the cluster ahead of time
+  and keep it; or tether.
 - Terminal at 20 pt or larger. `kubectl get` output is wide: a smaller font for steps 3 and
   13, or let it wrap.
-- Port 8000 free: the morning's Traefik (`docker/compose-traefik`) must be down.
+- Port 8000 free: the Traefik from the Docker half day (`docker/compose-traefik`) must be down.
 
 ---
 
@@ -105,12 +80,12 @@ morning, or cleaned it up, gets it back with `./registry.sh`; step 1 runs it any
 
 ## Step 1: setup check
 
-**Goal:** everybody has the tools, and the registry from the morning is there.
+**Goal:** everybody has the tools, and the registry from the Docker half day is there.
 
 <!-- run -->
 ```bash
 cd ~/docker-k3s/k3s
-./registry.sh          # the morning's registry: starts it only if it isn't running
+./registry.sh          # the Docker half day's registry: starts it only if it isn't running
 ./setup-check.sh
 ```
 
@@ -119,7 +94,7 @@ cd ~/docker-k3s/k3s
   AKS in Azure, EKS in AWS. It's to Kubernetes what the `docker` CLI is to the Docker engine:
   it sends requests to an API, and the cluster does the work.
 - **The registry stays the bridge.** Everything the cluster runs, it pulls from a registry.
-  The image we pushed in the morning, `localhost:5000/hello-web:1.0`, is our first workload.
+  The image we pushed in the Docker half day, `localhost:5000/hello-web:1.0`, is our first workload.
 
 If it breaks: `k3d` or `kubectl` not found → `./install-tools.sh`, then open a new shell so
 `~/.local/bin` is on the `PATH`.
@@ -136,7 +111,7 @@ new containers will `docker ps` show afterwards?
 cd ~/docker-k3s/k3s
 cat cluster.yaml
 k3d cluster create --config cluster.yaml
-docker network connect k3d-workshop registry     # the nodes find the registry by its name, as the app found db this morning
+docker network connect k3d-workshop registry     # the nodes find the registry by its name, as the app found db in the Docker half day
 docker ps --filter label=k3d.cluster=workshop --format 'table {{.Names}}\t{{.Image}}\t{{.Ports}}'
 ```
 
@@ -182,7 +157,7 @@ kubectl get nodes -o wide
   scripts.
 
 If it breaks: "cluster workshop already exists" → fine, continue; or `k3d cluster delete
-workshop` and create it again. "port is already allocated" → the morning's Traefik is still
+workshop` and create it again. "port is already allocated" → the Compose Traefik is still
 running: `docker compose -f ~/docker-k3s/docker/compose-traefik/compose.yaml down`.
 
 ## Step 3: inside the cluster
@@ -199,7 +174,7 @@ kubectl -n kube-system get helmcharts                # -n: in this namespace
 docker exec k3d-workshop-server-0 crictl ps          # the containers of one node, seen from inside
 ```
 
-**Ask first:** this morning we built `hello-web` and pushed it. Is the image in the cluster
+**Ask first:** in the Docker half day we built `hello-web` and pushed it. Is the image in the cluster
 now?
 
 <!-- run -->
@@ -291,8 +266,8 @@ kubectl run hello --image=localhost:5000/hello-web:1.0 --port=8080 --dry-run=cli
 - **`memoryLimitMb`** is the node's memory: no limit set. That changes in the next step.
 - **`port-forward`** tunnels through the Kubernetes API: a developer tool for a quick look,
   not how users reach an app (that's steps 8 and 9).
-- **The answer:** it's gone, and nothing brings it back. Most of the room knows that after
-  the morning; it's the baseline for the next step. A Pod alone is like a container started
+- **The answer:** it's gone, and nothing brings it back. Most of the room knows that from
+  the Docker half day; it's the baseline for the next step. A Pod alone is like a container started
   with `docker run`: if it's deleted, or its node dies, it stays gone. (If its process
   crashes, the kubelet restarts the container; more in step 6.) That's why nobody creates
   Pods directly.
@@ -302,7 +277,7 @@ kubectl run hello --image=localhost:5000/hello-web:1.0 --port=8080 --dry-run=cli
 
 If it breaks: `ErrImagePull` or `ImagePullBackOff` → the registry isn't connected to the
 cluster's network: `docker network connect k3d-workshop registry` (step 2). Port 8080 in
-use → something from the morning still runs there: `docker ps --filter publish=8080`.
+use → something from the Docker half day still runs there: `docker ps --filter publish=8080`.
 
 ## Step 5: manifests and Deployments
 
@@ -406,7 +381,7 @@ kubectl get deployment hello
 ```
 
 **Ask first:** the app in one Pod crashes (exit code 3, the `/crash` endpoint from the
-morning). Do we get a new Pod, or the same one?
+Docker half day). Do we get a new Pod, or the same one?
 
 <!-- run -->
 ```bash
@@ -510,7 +485,7 @@ echo "env: $(kubectl get deployment hello -o jsonpath='{.spec.template.spec.cont
 - **The readiness probe** (in `deployment.yaml`) makes this safe: a new Pod gets traffic
   only when `/healthz` answers, and an old Pod is removed only when a new one is ready.
   Without it, a Pod counts as ready as soon as the process starts, before ASP.NET Core
-  listens. That's the morning's "running is not ready". The kubelet probes from outside the
+  listens. That's "running is not ready" from the Docker half day. The kubelet probes from outside the
   container, so the chiseled image needs no `curl`. The `preStop` pause at the end of the
   file is the other half of a rollout without errors; step 9 measures it.
 - **The answer:** all three. The rollout stops because the new Pod never becomes ready,
@@ -535,8 +510,6 @@ echo "env: $(kubectl get deployment hello -o jsonpath='{.spec.template.spec.cont
 If it breaks: `rollout status` times out in the first block → `kubectl get pods` and step
 13's recipe.
 
-**Break:** the end of Part 2.
-
 ---
 
 # Part 3: reaching the app
@@ -559,7 +532,7 @@ kubectl get endpointslices -l kubernetes.io/service-name=hello \
 answer?
 
 A client inside the cluster: a Pod with `curl` that just waits, and `kubectl exec` runs
-the requests in it, like `docker exec` in the morning:
+the requests in it, like `docker exec` in the Docker half day:
 
 <!-- run -->
 ```bash
@@ -580,7 +553,7 @@ kubectl delete pod client --wait=false
   long-running caller may stick to one Pod. `SocketsHttpHandler.PooledConnectionLifetime`
   makes it reconnect now and then.
 - **DNS names:** `hello` from the same namespace, `hello.default` from another one, the
-  full name `hello.default.svc.cluster.local` from anywhere. The morning's version: a
+  full name `hello.default.svc.cluster.local` from anywhere. The Docker version: a
   container name on a Docker network. In a connection string, it's the Service name
   (`Host=postgres`, step 12), never `localhost`.
 - **`port: 80` → `targetPort: 8080`:** callers use the Service's port; the container's port
@@ -595,7 +568,7 @@ again. A Service with no endpoints → its selector doesn't match the Pods' labe
 
 ## Step 9: Ingress: Traefik again
 
-**Goal:** one entry point for HTTP, routed by host name: the morning's Traefik, configured
+**Goal:** one entry point for HTTP, routed by host name: the Traefik from the Docker half day, configured
 by Kubernetes resources instead of labels.
 
 <!-- run -->
@@ -627,8 +600,8 @@ wait                                                                     # for t
 - **The way of a request:** `curl` → port 8000 on your laptop → the k3d load balancer
   container → port 80 of a node → Traefik's Pod → the `hello` Service → one of the Pods. On
   a real k3s server, the k3d part disappears: the server's own port 80 is Traefik.
-- **The same Traefik as this morning**, v3.7.13, installed by k3s:
-  `kubectl -n kube-system get pods -l app.kubernetes.io/name=traefik`. In the morning it
+- **The same Traefik as in the Docker half day**, v3.7.13, installed by k3s:
+  `kubectl -n kube-system get pods -l app.kubernetes.io/name=traefik`. With Compose it
   watched the Docker API for labels; here it watches the Kubernetes API for Ingress
   resources.
 - **Ingress** is the routing rule: host and path to a Service. The **ingress controller**
@@ -638,7 +611,7 @@ wait                                                                     # for t
   Angular container's Service. The newer Gateway API is the successor to Ingress; Traefik
   supports both, and Ingress is what k3s sets up by default.
 - **`/request`:** the client is Traefik's Pod again, and the real client is in
-  `X-Forwarded-For`. Same fix as in the morning, `ASPNETCORE_FORWARDEDHEADERS_ENABLED`; next
+  `X-Forwarded-For`. Same fix as in the Docker half day, `ASPNETCORE_FORWARDEDHEADERS_ENABLED`; next
   step, through a ConfigMap.
 - **The answer:** none, all 50 return `200`. That takes two lines in
   [`deployment.yaml`](hello/deployment.yaml): the readiness probe, so a new Pod gets
@@ -652,12 +625,12 @@ wait                                                                     # for t
 
 If it breaks: 404 right after `apply` → Traefik needs a moment; repeat the `curl`.
 "Connection refused" on 8000 → the cluster was created without the port mapping, or the
-morning's Traefik took the port first.
+Compose Traefik took the port first.
 
 ## Step 10: ConfigMaps and Secrets
 
-**Goal:** configuration from the cluster, the morning's environment variables as
-resources.
+**Goal:** configuration from the cluster, the environment variables of the Docker
+half day as resources.
 
 <!-- run -->
 ```bash
@@ -711,7 +684,7 @@ kubectl delete -f deployment-config.yaml -f config.yaml -f service.yaml -f ingre
 
 - **ConfigMap** for settings, **Secret** for passwords and keys; both are key/value
   resources next to the Deployment. `envFrom` turns every key into an environment variable,
-  and `__` becomes the `:` of `appsettings.json`, exactly as in the morning: the app reads
+  and `__` becomes the `:` of `appsettings.json`, exactly as with Docker: the app reads
   `Database:Host` and doesn't know it's in Kubernetes. A ConfigMap can also be mounted as a
   file, for example as `appsettings.Production.json`. `postgres.visits` is the
   `<service>.<namespace>` form from step 8, for a database we start in step 11.
@@ -744,7 +717,7 @@ the apply; `kubectl rollout status deployment/hello` and try again.
 
 ## Step 11: volumes and PersistentVolumeClaims
 
-**Goal:** data that outlives its Pod: the morning's named volume, the Kubernetes way.
+**Goal:** data that outlives its Pod: the named volume of the Docker half day, the Kubernetes way.
 
 The manifest: a Secret, a PersistentVolumeClaim, a Deployment, a Service
 ([`visits/1-postgres.yaml`](visits/1-postgres.yaml)), in a namespace of its own:
@@ -785,14 +758,14 @@ kubectl get pv -o custom-columns=VOLUME:.metadata.name,CLAIM:.spec.claimRef.name
   one node at a time" (`ReadWriteOnce`). The **PersistentVolume** is the actual storage. The
   **StorageClass** says how to make one when a claim asks: in k3s, `local-path`, a folder
   on the node. The Deployment mounts the claim at `/var/lib/postgresql`, the Postgres 18
-  path from the morning.
+  path from the Docker half day.
 - **The answer:** the same node, every time. Local storage is bound to its node: the PV
   has a node affinity (the `NODE` column), so the Pod has to follow its data. If that node
   dies, the data is gone and the Pod can't move. In the cloud, the StorageClass gives
   network disks (Azure Disk) that move with the Pod; on-premises k3s clusters often use
   Longhorn (replicated across nodes, also from SUSE) or NFS.
 - **And the note survived**, of course: the data is in the volume, not in the container,
-  exactly like the morning's `workshop-pgdata`. `kubectl exec` is `docker exec`.
+  exactly like `workshop-pgdata` in the Docker half day. `kubectl exec` is `docker exec`.
 - **Namespaces in manifests:** every object in `visits/` says `namespace: visits` in its
   metadata, while `hello/` says nothing and lands in the current namespace (`default`).
   Files without a namespace can be sent elsewhere with `kubectl apply -n`; with one, the
@@ -816,7 +789,7 @@ If it breaks: the PVC stays `Pending` → it waits for its first Pod (`WaitForFi
 
 ## Step 12: a real deployment: the visit counter
 
-**Goal:** the morning's Compose app with Traefik, as a complete set of manifests: build,
+**Goal:** the Compose app with Traefik from the Docker half day, as a complete set of manifests: build,
 push, apply, reach.
 
 Build and push the app ([`docker/visit-counter`](../docker/visit-counter)):
@@ -859,7 +832,7 @@ sleep 3                                                                  # and k
 for i in 1 2 3 4 5 6; do curl -s http://visits.localhost:8000/ | jq -c; done
 ```
 
-What we deployed, and how it compares with the morning:
+What we deployed, and how it compares with Compose:
 
 <!-- run -->
 ```bash
@@ -894,7 +867,7 @@ kubectl delete namespace visits
   deliberately doesn't check the database. **Agent trap:** a liveness probe that checks the
   database: when the database is down, every Pod restarts in a loop, and nothing gets
   better.
-- **`securityContext`** is the morning's `docker run --read-only --cap-drop ALL
+- **`securityContext`** is the Docker half day's `docker run --read-only --cap-drop ALL
   --security-opt no-new-privileges`, plus `runAsNonRoot`: the cluster refuses to start an
   image that would run as root (step 13 shows it). The chiseled image passes all of it.
 - **`servedBy`** alternates, `visits` counts up: three replicas, one database. Three
@@ -923,7 +896,7 @@ Pods that were already running don't crash when the database goes away: delete t
 **Goal:** a recipe for every broken Pod: status, events, logs.
 
 Seven broken apps ([`troubleshooting/`](troubleshooting)), each with a different mistake.
-Two of them need images the morning built:
+Two of them need images from the Docker half day:
 
 <!-- run -->
 ```bash
@@ -997,13 +970,13 @@ kubectl delete namespace troubleshooting
   node can't get the image, `CreateContainerConfigError` = the spec is wrong for this image
   or a ConfigMap/Secret is missing, `CrashLoopBackOff` = the app starts and exits, `Running`
   but not ready = the readiness probe fails. Each stage has its own place to look.
-- **App 3 is the morning's agent trap** (a runtime stage without `USER`) meeting a cluster
+- **App 3 is an agent trap from the Docker half day** (a runtime stage without `USER`) meeting a cluster
   that enforces non-root. Many clusters do: AKS with Azure Policy, OpenShift always. Also
   rejected: `USER app` by name ("image has non-numeric user, cannot verify user is
-  non-root"); the morning's `USER $APP_UID` is a number and passes.
+  non-root"); the Dockerfile's `USER $APP_UID` is a number and passes.
 - **App 5 is the quietest:** everything is green, and the Service sends traffic nowhere. A
   label typo; `kubectl get endpointslices` is the check.
-- **App 6, in .NET:** the morning showed that .NET respects the limit and throws
+- **App 6, in .NET:** the Docker half day showed that .NET respects the limit and throws
   `OutOfMemoryException` before the kernel kills it. A native leak, or a Node.js process,
   ends like this `alpine` one: `OOMKilled`, exit code 137.
 - **App 7 is the most common .NET mistake** in agent-written manifests: port 80, from the
@@ -1023,9 +996,9 @@ projector: zoom in on the `describe` line.
 
 ## Step 14: wrap-up
 
-**Goal:** the map of the afternoon, the agent traps, and a clean laptop.
+**Goal:** the map of this half day, the agent traps, and a clean laptop.
 
-| Docker (morning) | k3s (afternoon) | Step |
+| Docker | k3s | Step |
 | --- | --- | --- |
 | `docker` CLI → engine | `kubectl` → API server; contexts | 1, 2 |
 | `docker run` | Pod; Deployment → ReplicaSet → Pods | 4, 5 |
@@ -1054,7 +1027,7 @@ projector: zoom in on the `describe` line.
 | `explain <type>.<field>` | the built-in documentation |
 | `-n <namespace>`, `-A`, `-l app=x`, `--context` | where, everywhere, which ones, which cluster |
 
-The agent traps of the afternoon: read every generated manifest with this list in mind.
+The agent traps of the k3s half day: read every generated manifest with this list in mind.
 
 | Trap | Step |
 | --- | --- |
@@ -1082,7 +1055,7 @@ The agent traps of the afternoon: read every generated manifest with this list i
 - **Jobs and CronJobs:** a Job is a Pod that runs to completion, a CronJob starts one on a
   schedule. What is a Windows service on a server today is a Deployment; what is a scheduled
   task is a CronJob; database migrations are a Job.
-- The vocabulary is new; the containers are the same as this morning.
+- The vocabulary is new; the containers are the same as in the Docker half day.
 
 Delete the cluster; the registry stays:
 
@@ -1113,7 +1086,7 @@ docker image rm localhost:5000/visit-counter:1.0 localhost:5000/hello-web:3-mult
 
 | Port | What |
 | ---: | --- |
-| 5000 | the private registry from the morning |
+| 5000 | the private registry from the Docker half day |
 | 6550 | the Kubernetes API of the workshop cluster, on 127.0.0.1 only |
 | 8000 | Traefik in the cluster: `hello.localhost`, `visits.localhost` |
 | 8080 | `kubectl port-forward` (steps 4, 6, 7) |
