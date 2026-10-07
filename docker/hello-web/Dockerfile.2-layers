@@ -1,0 +1,9 @@
+# 2: layer order. The project file changes rarely, the code often: restore gets its own cached layer.
+FROM mcr.microsoft.com/dotnet/sdk:10.0
+WORKDIR /src
+COPY HelloWeb.csproj .
+RUN dotnet restore
+COPY . .
+RUN dotnet publish -c Release -o /app --no-restore
+WORKDIR /app
+ENTRYPOINT ["dotnet", "HelloWeb.dll"]

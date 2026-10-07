@@ -1,0 +1,22 @@
+# Broken app 1
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: catalog
+  namespace: troubleshooting
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: catalog
+  template:
+    metadata:
+      labels:
+        app: catalog
+    spec:
+      containers:
+        - name: catalog
+          image: localhost:5000/hello-web:1.O
+          resources:
+            requests: { cpu: 50m, memory: 64Mi }
+            limits: { memory: 256Mi }

@@ -1,0 +1,18 @@
+# Configuration for hello-web: settings in a ConfigMap, secrets in a Secret.
+# Keys become environment variables: __ is the : of appsettings.json.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hello-config
+data:
+  Greeting: Hello from a ConfigMap
+  Database__Host: postgres.visits
+  ASPNETCORE_FORWARDEDHEADERS_ENABLED: "true"    # behind Traefik (step 9)
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: hello-secrets
+type: Opaque
+stringData:                       # plain text here; Kubernetes stores it base64-encoded
+  ConnectionStrings__Default: Host=postgres.visits;Username=app;Password=do-not-commit-me

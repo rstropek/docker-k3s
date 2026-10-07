@@ -1,0 +1,8 @@
+# Never send build output from your machine into the image build
+**/bin/
+**/obj/
+# Editor and source control folders
+.git/
+.vs/
+.vscode/
+*.user

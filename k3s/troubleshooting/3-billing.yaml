@@ -1,0 +1,24 @@
+# Broken app 3
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: billing
+  namespace: troubleshooting
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: billing
+  template:
+    metadata:
+      labels:
+        app: billing
+    spec:
+      securityContext:
+        runAsNonRoot: true
+      containers:
+        - name: billing
+          image: localhost:5000/hello-web:3-multistage
+          resources:
+            requests: { cpu: 50m, memory: 64Mi }
+            limits: { memory: 256Mi }

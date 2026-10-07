@@ -1,0 +1,23 @@
+# Broken app 6
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: importer
+  namespace: troubleshooting
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: importer
+  template:
+    metadata:
+      labels:
+        app: importer
+    spec:
+      containers:
+        - name: importer
+          image: alpine:3.24
+          command: ["tail", "/dev/zero"]
+          resources:
+            requests: { cpu: 50m, memory: 32Mi }
+            limits: { memory: 64Mi }

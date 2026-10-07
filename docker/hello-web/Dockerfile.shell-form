@@ -1,0 +1,13 @@
+# Same as 3, but ENTRYPOINT in shell form: /bin/sh becomes PID 1 and swallows SIGTERM.
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+WORKDIR /src
+COPY HelloWeb.csproj .
+RUN dotnet restore
+COPY . .
+RUN dotnet publish -c Release -o /app --no-restore
+
+FROM mcr.microsoft.com/dotnet/aspnet:10.0
+WORKDIR /app
+COPY --from=build /app .
+EXPOSE 8080
+ENTRYPOINT dotnet HelloWeb.dll

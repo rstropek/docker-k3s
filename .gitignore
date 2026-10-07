@@ -1,0 +1,8 @@
+# .NET build output
+bin/
+obj/
+# rehearsal logs: regenerate with rehearsal/run-blocks.py
+rehearsal/logs/
+
+# the agreed topics, from the customer exchange; kept local
+workshop-concept.md

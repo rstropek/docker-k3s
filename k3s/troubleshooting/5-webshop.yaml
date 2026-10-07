@@ -1,0 +1,34 @@
+# Broken app 5
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webshop
+  namespace: troubleshooting
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: webshop
+  template:
+    metadata:
+      labels:
+        app: webshop
+    spec:
+      containers:
+        - name: webshop
+          image: localhost:5000/hello-web:1.0
+          resources:
+            requests: { cpu: 50m, memory: 64Mi }
+            limits: { memory: 256Mi }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: webshop
+  namespace: troubleshooting
+spec:
+  selector:
+    app: web-shop
+  ports:
+    - port: 80
+      targetPort: 8080

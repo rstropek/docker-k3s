@@ -1,0 +1,22 @@
+# Broken app 4
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: reports
+  namespace: troubleshooting
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: reports
+  template:
+    metadata:
+      labels:
+        app: reports
+    spec:
+      containers:
+        - name: reports
+          image: localhost:5000/hello-web:1.0
+          resources:
+            requests: { cpu: "64", memory: 64Mi }
+            limits: { memory: 256Mi }

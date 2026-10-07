@@ -1,0 +1,40 @@
+# deployment.yaml, plus configuration from the ConfigMap and the Secret in config.yaml (step 10)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hello
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: hello                  # the Pods this Deployment owns: all with this label
+  template:                       # the Pod to create, as often as replicas says
+    metadata:
+      labels:
+        app: hello
+    spec:
+      containers:
+        - name: hello
+          image: localhost:5000/hello-web:1.0     # from the registry of the Docker half day
+          ports:
+            - containerPort: 8080
+          envFrom:                # every key becomes an environment variable
+            - configMapRef:
+                name: hello-config
+            - secretRef:
+                name: hello-secrets
+          resources:
+            requests:             # what the scheduler reserves on a node
+              cpu: 50m            # 5% of one CPU
+              memory: 64Mi
+            limits:
+              memory: 256Mi       # like docker run --memory 256m
+          readinessProbe:         # send traffic only when this answers (step 7)
+            httpGet:
+              path: /healthz
+              port: 8080
+            periodSeconds: 2
+          lifecycle:
+            preStop:              # keep serving for 5 s while Traefik and the Service stop sending traffic here (step 9)
+              sleep:
+                seconds: 5

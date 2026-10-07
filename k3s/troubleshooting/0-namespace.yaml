@@ -1,0 +1,5 @@
+# Seven broken apps, each with a different mistake. Find them with get, describe, logs, and events.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: troubleshooting

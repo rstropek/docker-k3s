@@ -1,0 +1,79 @@
+# Postgres with its data on a PersistentVolumeClaim: the k3s version of the named volume
+# from the Docker half day. For production, prefer a managed database or an operator.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: postgres
+  namespace: visits
+stringData:
+  password: workshop
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-data
+  namespace: visits
+spec:
+  accessModes:
+    - ReadWriteOnce               # one node at a time may mount it
+  resources:
+    requests:
+      storage: 1Gi
+  # no storageClassName: the cluster's default (in k3s: local-path, a folder on the node)
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+  namespace: visits
+spec:
+  replicas: 1                     # one database, one volume: never scale this up
+  strategy:
+    type: Recreate                # stop the old Pod before the new one mounts the volume
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:18.6
+          env:
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres
+                  key: password
+          ports:
+            - containerPort: 5432
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql   # Postgres 18: not .../data
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "postgres", "-h", "127.0.0.1"]
+            periodSeconds: 2
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              memory: 512Mi
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: postgres-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres                  # the host name for the app: postgres (or postgres.visits from elsewhere)
+  namespace: visits
+spec:
+  selector:
+    app: postgres
+  ports:
+    - port: 5432

@@ -1,0 +1,34 @@
+# The workshop cluster: k3s with one server and two agents, each node a Docker container.
+#   k3d cluster create --config cluster.yaml
+#   k3d cluster delete workshop
+apiVersion: k3d.io/v1alpha5
+kind: Simple
+metadata:
+  name: workshop                    # node containers: k3d-workshop-server-0, -agent-0, -agent-1
+servers: 1                          # runs the Kubernetes control plane (and workloads, too)
+agents: 2                           # run workloads only
+image: rancher/k3s:v1.36.5-k3s1     # the same k3s you would install on a server, in a container image
+kubeAPI:
+  hostIP: 127.0.0.1                 # kubectl talks to the cluster here; not reachable from the network
+  hostPort: "6550"
+ports:
+  - port: 8000:80                   # http://<name>.localhost:8000 -> Traefik, the ingress controller in k3s
+    nodeFilters:
+      - loadbalancer
+registries:
+  # Becomes /etc/rancher/k3s/registries.yaml on every node. Image names stay localhost:5000/...
+  # as in the Docker half day; the nodes fetch them from the registry container by its name.
+  config: |
+    mirrors:
+      "localhost:5000":
+        endpoint:
+          - http://registry:5000
+    configs:
+      "registry:5000":
+        auth:
+          username: workshop
+          password: docker-k3s
+options:
+  kubeconfig:
+    updateDefaultKubeconfig: true   # add a context k3d-workshop to ~/.kube/config ...
+    switchCurrentContext: true      # ... and make it the current one

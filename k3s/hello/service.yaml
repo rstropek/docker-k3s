@@ -1,0 +1,11 @@
+# A stable name and address in front of the hello Pods
+apiVersion: v1
+kind: Service
+metadata:
+  name: hello
+spec:
+  selector:
+    app: hello                    # sends traffic to all ready Pods with this label
+  ports:
+    - port: 80                    # the Service's port: http://hello
+      targetPort: 8080            # the container's port
