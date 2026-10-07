@@ -1,0 +1,21 @@
+# 5: build arguments. Where an ARG is declared decides where it can be used.
+# Before the first FROM: usable in FROM lines only.
+ARG DOTNET_VERSION=10.0
+
+FROM mcr.microsoft.com/dotnet/sdk:${DOTNET_VERSION} AS build
+WORKDIR /src
+COPY HelloWeb.csproj .
+RUN dotnet restore
+COPY . .
+# Declared after the restore: a new version re-runs every RUN below this line, not the restore.
+ARG VERSION=0.0.1-dev
+RUN dotnet publish -c Release -o /app --no-restore -p:Version=$VERSION
+
+FROM mcr.microsoft.com/dotnet/aspnet:${DOTNET_VERSION}-noble-chiseled
+# A stage that starts from an image starts without the ARGs above: declare VERSION again.
+ARG VERSION
+LABEL org.opencontainers.image.version=$VERSION
+WORKDIR /app
+COPY --from=build /app .
+EXPOSE 8080
+ENTRYPOINT ["dotnet", "HelloWeb.dll"]

@@ -341,7 +341,8 @@ got into the context; check that `.dockerignore` is there.
 
 ## Step 6: multi-stage and chiseled
 
-**Goal:** build with the SDK, ship only the runtime. Then ship even less.
+**Goal:** build with the SDK, ship only the runtime. Then ship even less. And where a build
+argument (`ARG`) can be used, because that depends on where it's declared.
 
 [`Dockerfile.3-multistage`](hello-web/Dockerfile.3-multistage):
 
@@ -391,12 +392,46 @@ Rehearsal sizes (on disk / compressed):
 | `hello-web:3-multistage` | `aspnet:10.0` | 341 MB / 96 MB |
 | `hello-web:4-chiseled` | `aspnet:10.0-noble-chiseled` | 181 MB / 56 MB |
 
+Build arguments: [`Dockerfile.5-args`](hello-web/Dockerfile.5-args) takes the .NET version
+for both base images and the app's version number from the `docker build` command line:
+
+<!-- run -->
+```bash
+cd ~/docker-k3s/docker/hello-web
+diff Dockerfile.4-chiseled Dockerfile.5-args
+docker build -q -f Dockerfile.5-args --build-arg VERSION=1.2.3 -t hello-web:5-args .
+docker run -d --name hello -p 8080:8080 hello-web:5-args
+sleep 2
+curl -s localhost:8080 | jq .version                                      # compiled into the app
+docker inspect hello-web:5-args --format '{{index .Config.Labels "org.opencontainers.image.version"}}'
+docker history --no-trunc --format '{{.CreatedBy}}' hello-web:5-args | grep 'ARG VERSION'
+docker rm -f hello
+```
+
+**Ask first:** two small edits. (a) Delete the second `ARG VERSION`, the one in the final
+stage. (b) Move the first one to the top of the file, next to `ARG DOTNET_VERSION`. What
+happens in each case?
+
+<!-- run -->
+```bash
+cd ~/docker-k3s/docker/hello-web
+# (a) without the ARG in the final stage
+grep -v '^ARG VERSION$' Dockerfile.5-args | docker build -q -f - --build-arg VERSION=1.2.3 -t hello-web:5-args-trap .
+docker inspect hello-web:5-args-trap --format 'label: "{{index .Config.Labels "org.opencontainers.image.version"}}"'
+grep -v '^ARG VERSION$' Dockerfile.5-args | docker build --check -f - . 2>&1 | grep -E 'WARNING|Usage'
+docker image rm hello-web:5-args-trap
+# (b) ARG VERSION above the first FROM
+sed -e '/^ARG VERSION=/d' -e '1i ARG VERSION=0.0.1-dev' Dockerfile.5-args \
+  | docker build --progress=plain -f - --build-arg VERSION=1.2.3 . 2>&1 | grep -m1 -o 'error MSB.*'
+```
+
 - **Multi-stage:** the first stage has the SDK, compilers, and NuGet; only its `/app` output
   is copied into the second stage. The final image never contains the SDK or your sources.
   **Agent trap:** a single-stage Dockerfile that ships the SDK.
 - **This is what Visual Studio generates**, too: "Add → Docker Support" writes a multi-stage
-  Dockerfile (stages `base`, `build`, `publish`, `final`) with `USER app` and
-  `EXPOSE 8080`. Now you can read it.
+  Dockerfile (stages `base`, `build`, `publish`, `final`) with `USER app`, `EXPOSE 8080`,
+  and `ARG BUILD_CONFIGURATION=Release`, declared in `build` and again in `publish`. Now you
+  can read it.
 - **The same pattern for Angular:** stage 1 `FROM node`, `npm ci`, `ng build`; stage 2
   `FROM nginx`, copy `dist/`. Node never ships.
 - **The answer:** you don't. **Chiseled** Ubuntu images contain only the files .NET needs: no
@@ -408,6 +443,29 @@ Rehearsal sizes (on disk / compressed):
   `10.0-noble-chiseled-extra` variant (ICU and tzdata).
 - `EXPOSE 8080` publishes nothing. It documents the port, and tools read it (Traefik in
   step 15).
+- **`ARG` is build time, `ENV` is run time.** An `ARG` exists while `docker build` runs and
+  is set with `--build-arg`; `docker run -e VERSION=...` can't change a version that was
+  compiled in. Use it for what the build needs: base image version, app version, build
+  configuration. Settings per environment are `ENV` and `-e` (step 10).
+- **Where an `ARG` can be used** is decided by where it's declared:
+  - above the first `FROM`: in `FROM` lines only (`DOTNET_VERSION` picks both base images);
+  - inside a stage: from its line to the end of that stage;
+  - a stage that starts `FROM` an image starts without any; `FROM build AS publish`, as in
+    Visual Studio's file, inherits those of `build` (so its second `ARG` is a harmless
+    repetition).
+- **The answer:** (a) the build succeeds and the label is empty: an undeclared variable is
+  an empty string, not an error. `docker build --check` finds it (the `UndefinedVar` rule),
+  and so does a normal build, as a warning that `-q` swallows. (b) `$VERSION` is empty in
+  `RUN dotnet publish`, and the error is MSBuild's `MSB4044` about `NuGetVersion`: nothing
+  says "ARG". `--check` doesn't help here, because a `RUN` line is shell, and the check
+  doesn't look inside it. **Agent trap:** all `ARG`s collected at the top of the file "for
+  a better overview"; everything below the first `FROM` then sees empty strings.
+- **Placement matters for the cache, too.** When an `ARG`'s value changes, every `RUN` after
+  its declaration runs again, even the ones that don't use it. `VERSION` is declared after
+  `dotnet restore`, so a new version number doesn't download the NuGet packages again.
+- **`ARG` values are in the image.** `docker history` shows `ARG VERSION=1.2.3` of the final
+  stage. A version number is fine there; a NuGet token is not (step 10). A secret that the
+  build needs goes in with `RUN --mount=type=secret`, which leaves no trace in the image.
 
 If it breaks: the app crashes with `CultureNotFoundException` in the chiseled image → it
 needs culture data; use `aspnet:10.0-noble-chiseled-extra`.
@@ -1138,7 +1196,7 @@ The checklist:
 | 2 | Small base image: chiseled, distroless, or Alpine | steps 6, 16 |
 | 3 | Non-root: chiseled does it; otherwise `USER $APP_UID` after `FROM aspnet:10.0` | steps 4, 6, 16 |
 | 4 | `.dockerignore`, layer order | step 5 |
-| 5 | No secrets in `ENV`, `ARG`, or copied files | step 10 |
+| 5 | No secrets in `ENV`, `ARG`, or copied files | steps 6, 10 |
 | 6 | Pinned versions, updated by a bot; rebuild regularly for base image patches | step 12 |
 | 7 | Scan in CI (Trivy, Docker Scout) | step 16 |
 | 8 | Run read-only, without extra privileges | step 16 |
@@ -1193,6 +1251,7 @@ list in mind.
 | `-bookworm-slim` or other Debian tags for .NET 10 | 3 |
 | no `.dockerignore` | 5 |
 | a single stage that ships the SDK | 6 |
+| all `ARG`s at the top of the file, above the first `FROM` | 6 |
 | shell-form `ENTRYPOINT` or `CMD` | 9 |
 | `docker system prune` or `volume prune` to clean up | 9 |
 | secrets in `ENV` or `ARG` | 10 |
@@ -1210,7 +1269,7 @@ Clean up the Docker half day, but keep the registry and its image:
 
 <!-- run -->
 ```bash
-docker image rm hello-web:1-naive hello-web:2-layers hello-web:3-multistage hello-web:4-chiseled hello-web:shell-form 2>/dev/null
+docker image rm hello-web:1-naive hello-web:2-layers hello-web:3-multistage hello-web:4-chiseled hello-web:5-args hello-web:shell-form 2>/dev/null
 docker image rm visit-counter:1 visit-counter:compose localhost:5000/hello-web:1.0 hello-web:sdk 2>/dev/null
 docker ps --filter name=registry --format '{{.Names}}: {{.Status}}'      # still running for the k3s half day
 ```

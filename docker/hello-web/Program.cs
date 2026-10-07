@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Runtime.InteropServices;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -9,6 +10,7 @@ var app = builder.Build();
 app.MapGet("/", (IConfiguration config, IHostEnvironment env) => new
 {
     message = config["Greeting"] ?? "Hello",
+    version = Assembly.GetEntryAssembly()?.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion,
     host = Environment.MachineName,
     os = RuntimeInformation.OSDescription,
     user = Environment.UserName,

@@ -21,7 +21,7 @@ written down as a **storybook**: the presenter's guide with every command ready 
 
 1. A container is a process, not a small VM
 2. Images and containers, layers, and the layer cache
-3. Dockerfiles for .NET: from naive to multi-stage to chiseled images
+3. Dockerfiles for .NET: from naive to multi-stage to chiseled images, and build arguments
 4. Running, watching, and stopping containers, and what happens to PID 1
 5. Configuration with environment variables
 6. Volumes, registries (a private one, with login), and networks
